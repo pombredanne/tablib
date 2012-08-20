@@ -6,35 +6,35 @@
 import tablib
 
 import sys
-from tablib.compat import anyjson
+from tablib.packages import omnijson as json
 
 
 title = 'json'
-extentions = ('json', 'jsn')
+extensions = ('json', 'jsn')
 
 
 def export_set(dataset):
     """Returns JSON representation of Dataset."""
-    return anyjson.serialize(dataset.dict)
+    return json.dumps(dataset.dict)
 
 
 def export_book(databook):
     """Returns JSON representation of Databook."""
-    return anyjson.serialize(databook._package())
+    return json.dumps(databook._package())
 
 
 def import_set(dset, in_stream):
     """Returns dataset from JSON stream."""
 
     dset.wipe()
-    dset.dict = anyjson.deserialize(in_stream)
+    dset.dict = json.loads(in_stream)
 
 
 def import_book(dbook, in_stream):
     """Returns databook from JSON stream."""
 
     dbook.wipe()
-    for sheet in anyjson.deserialize(in_stream):
+    for sheet in json.loads(in_stream):
         data = tablib.Dataset()
         data.title = sheet['title']
         data.dict = sheet['data']
@@ -44,7 +44,7 @@ def import_book(dbook, in_stream):
 def detect(stream):
     """Returns True if given stream is valid JSON."""
     try:
-        anyjson.deserialize(stream)
+        json.loads(stream)
         return True
     except ValueError:
         return False

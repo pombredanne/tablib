@@ -26,7 +26,6 @@ if is_py3:
     from tablib.packages import markup3 as markup
     from tablib.packages import openpyxl3 as openpyxl
     from tablib.packages.odf3 import opendocument, style, text, table
-    from tablib.packages import anyjson
 
     import csv
     from io import StringIO
@@ -40,12 +39,12 @@ else:
     from cStringIO import StringIO as BytesIO
     from cStringIO import StringIO
     import tablib.packages.xlwt as xlwt
+    import tablib.packages.xlrd as xlrd
     from tablib.packages import markup
     from itertools import ifilter
     from tablib.packages import openpyxl
     from tablib.packages.odf import opendocument, style, text, table
 
     from tablib.packages import unicodecsv as csv
-    from tablib.packages import anyjson25 as anyjson
 
     unicode = unicode

@@ -46,17 +46,15 @@ Source Control
 Tablib source is controlled with Git_, the lean, mean, distributed source
 control machine.
 
-The repository is publicly accessable.
+The repository is publicly accessible.
 
     ``git clone git://github.com/kennethreitz/tablib.git``
 
-The project is hosted both on **GitHub** and **git.kennethreitz.com**.
+The project is hosted on **GitHub**.
 
 
     GitHub:
         http://github.com/kennethreitz/tablib
-    "Mirror":
-        http://git.kennethreitz.com/projects/tablib
 
 
 Git Branch Structure
@@ -73,7 +71,7 @@ Feature / Hotfix / Release branches follow a `Successful Git Branching Model`_ .
 
 Each release is tagged.
 
-When submitting patches, please place your feature/change in its own branch prior to opening a pull reqeust on GitHub_.
+When submitting patches, please place your feature/change in its own branch prior to opening a pull request on GitHub_.
 
 
 .. _Git: http://git-scm.org
@@ -154,7 +152,7 @@ When developing a feature for Tablib, the easiest way to test your changes for p
 	$ ./test_tablib.py
 
 
-`Hudson CI`_, amongst other tools, supports Java's xUnit testing report format. Nose_ allows us to generate our own xUnit reports.
+`Jenkins CI`_, amongst other tools, supports Java's xUnit testing report format. Nose_ allows us to generate our own xUnit reports.
 
 Installing nose is simple. ::
 
@@ -170,25 +168,25 @@ This will generate a **nosetests.xml** file, which can then be analyzed.
 
 
 
-.. _hudson:
+.. _jenkins:
 
 ----------------------
 Continuous Integration
 ----------------------
 
-Every commit made to the **develop** branch is automatically tested and inspected upon receipt with `Hudson CI`_. If you have access to the main repository and broke the build, you will receive an email accordingly.
+Every commit made to the **develop** branch is automatically tested and inspected upon receipt with `Jenkins CI`_. If you have access to the main repository and broke the build, you will receive an email accordingly.
 
 Anyone may view the build status and history at any time.
 
     http://ci.kennethreitz.com/
 
 
-If you are trustworthy and plan to contribute to tablib on a regular basis, please contact `Kenneth Reitz`_ to get an account on the Hudson Server.
+If you are trustworthy and plan to contribute to tablib on a regular basis, please contact `Kenneth Reitz`_ to get an account on the Jenkins Server.
 
 
 Additional reports will also be included here in the future, including :pep:`8` checks and stress reports for extremely large datasets.
 
-.. _`Hudson CI`: http://hudson.dev.java.net
+.. _`Jenkins CI`: http://jenkins-ci.org/
 .. _`Kenneth Reitz`: http://kennethreitz.com/contact-me/
 
 
@@ -212,13 +210,13 @@ Then, to build an HTML version of the docs, simply run the following from the **
 
 Your ``docs/_build/html`` directory will then contain an HTML representation of the documentation, ready for publication on most web servers.
 
-You can also generate the documentation in **ebpub**, **latex**, **json**, *&c* similarly.
+You can also generate the documentation in **epub**, **latex**, **json**, *&c* similarly.
 
 .. admonition:: GitHub Pages
 
 	To push the documentation up to `GitHub Pages`_, you will first need to run `sphinx-to-github`_ against your ``docs/_build/html`` directory.
 
-	GitHub Pages are powered by an HTML generation system called Jeckyl_, which is configured to ignore files and folders that begin with "``_``" (*ie.* **_static**).
+	GitHub Pages are powered by an HTML generation system called Jekyll_, which is configured to ignore files and folders that begin with "``_``" (*ie.* **_static**).
 
 
 
@@ -240,7 +238,7 @@ You can also generate the documentation in **ebpub**, **latex**, **json**, *&c* 
 .. _`reStructured Text`: http://docutils.sourceforge.net/rst.html
 .. _Sphinx: http://sphinx.pocoo.org
 .. _`GitHub Pages`: http://pages.github.com
-.. _Jeckyl: http://github.com/mojombo/jekyll
+.. _Jekyll: http://github.com/mojombo/jekyll
 .. _`sphinx-to-github`: http://github.com/michaeljones/sphinx-to-github
 
 ----------

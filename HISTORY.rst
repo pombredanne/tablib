@@ -1,6 +1,29 @@
 History
 -------
 
+++++
+
+* Unicode Column Headers
+
+0.9.11 (2011-06-30)
++++++++++++++++++++
+
+* Bugfixes
+
+0.9.10 (2011-06-22)
++++++++++++++++++++
+
+* Bugfixes
+
+0.9.9 (2011-06-21)
+++++++++++++++++++
+
+* Dataset API Changes
+* ``stack_rows`` => ``stack``, ``stack_columns`` => ``stack_cols``
+* column operations have their own methods now (``append_col``, ``insert_col``)
+* List-style ``pop()``
+* Redis-style ``rpush``, ``lpush``, ``rpop``, ``lpop``, ``rpush_col``, and ``lpush_col``
+
 0.9.8 (2011-05-22)
 ++++++++++++++++++
 

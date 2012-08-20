@@ -68,7 +68,7 @@ Adding Headers
 --------------
 
 
-It's time enhance our :class:`Dataset` by giving our columns some titles. To do so, set :class:`Dataset.headers`. ::
+It's time to enhance our :class:`Dataset` by giving our columns some titles. To do so, set :class:`Dataset.headers`. ::
 
     data.headers = ['First Name', 'Last Name']
 
@@ -87,7 +87,7 @@ Adding Columns
 
 Now that we have a basic :class:`Dataset` in place, let's add a column of **ages** to it. ::
 
-    data.append(col=[22, 20], header='Age')
+    data.append_col([22, 20], header='Age')
 
 Let's view the data now. ::
 
@@ -146,6 +146,13 @@ To do so, we access the :class:`Dataset` as if it were a standard Python diction
     >>> data['First Name']
     ['Kenneth', 'Bessie']
 
+You can also access the column using its index. ::
+
+    >>> d.headers
+    ['Last Name', 'First Name', 'Age']
+    >>> d.get_col(1)
+    ['Kenneth', 'Bessie']
+
 Let's find the average age. ::
 
     >>> ages = data['Age']
@@ -158,7 +165,7 @@ Let's find the average age. ::
 Removing Rows & Columns
 -----------------------
 
-It's easier than you could imagine. ::
+It's easier than you could imagine::
 
     >>> del data['Col Name']
 
@@ -195,7 +202,7 @@ Let's add a dynamic column to our :class:`Dataset` object. In this example, we h
         """Returns a random integer for entry."""
         return (random.randint(60,100)/100.0)
 
-    data.append(col=[random_grade], header='Grade')
+    data.append_col(random_grade, header='Grade')
 
 Let's have a look at our data. ::
 
@@ -244,7 +251,7 @@ Filtering Datasets with Tags
 
 
 When constructing a :class:`Dataset` object, you can add tags to rows by specifying the ``tags`` parameter.
-This allows you to filter your :class:`Dataset` later. This can be useful so separate rows of data based on
+This allows you to filter your :class:`Dataset` later. This can be useful to separate rows of data based on
 arbitrary criteria (*e.g.* origin) that you don't want to include in your :class:`Dataset`.
 
 Let's tag some students. ::
@@ -253,10 +260,10 @@ Let's tag some students. ::
 
     students.headers = ['first', 'last']
 
-    students.append(['Kenneth', 'Reitz'], tags=['male', 'technical'])
-    students.append(['Bessie', 'Monke'], tags=['female', 'creative'])
+    students.rpush(['Kenneth', 'Reitz'], tags=['male', 'technical'])
+    students.rpush(['Bessie', 'Monke'], tags=['female', 'creative'])
 
-Now that we have extra meta-data on our rows, we can use easily filter our :class:`Dataset`. Let's just see Male students. ::
+Now that we have extra meta-data on our rows, we can easily filter our :class:`Dataset`. Let's just see Male students. ::
 
 
     >>> students.filter(['male']).yaml
@@ -273,7 +280,7 @@ When dealing with a large number of :class:`Datasets <Dataset>` in spreadsheet f
 
 Let's say we have 3 different :class:`Datasets <Dataset>`. All we have to do is add then to a :class:`Databook` object... ::
 
-    book = tablib.Databook([data1, data2, data3])
+    book = tablib.Databook((data1, data2, data3))
 
 ... and export to Excel just like :class:`Datasets <Dataset>`. ::
 
