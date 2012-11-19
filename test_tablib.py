@@ -5,9 +5,11 @@
 
 import unittest
 import sys
-
+import openpyxl
+import os
 import tablib
 from tablib.compat import markup, unicode
+
 
 
 
@@ -657,7 +659,7 @@ class TablibTestCase(unittest.TestCase):
         self.founders.append(('Old', 'Man', 100500))
 
         self.assertEquals(
-            u"""
+            """
 first_name|last_name |gpa   
 ----------|----------|------
 John      |Adams     |90    
@@ -693,7 +695,6 @@ Old       |Man       |100500
             book.add_sheet(dataset)
         except tablib.InvalidDatasetType:
             self.fail("Subclass of tablib.Dataset should be accepted by Databook.add_sheet")
-
 
 if __name__ == '__main__':
     unittest.main()
