@@ -5,7 +5,7 @@
 
     This module implements the central Tablib objects.
 
-    :copyright: (c) 2011 by Kenneth Reitz.
+    :copyright: (c) 2016 by Kenneth Reitz.
     :license: MIT, see LICENSE for more details.
 """
 
@@ -14,22 +14,22 @@ from operator import itemgetter
 
 from tablib import formats
 
-from tablib.compat import OrderedDict
+from tablib.compat import OrderedDict, unicode
 
 
 __title__ = 'tablib'
-__version__ = '0.9.11'
-__build__ = 0x000911
+__version__ = '0.11.3'
+__build__ = 0x001103
 __author__ = 'Kenneth Reitz'
 __license__ = 'MIT'
-__copyright__ = 'Copyright 2011 Kenneth Reitz'
+__copyright__ = 'Copyright 2016 Kenneth Reitz'
 __docformat__ = 'restructuredtext'
 
 
 class Row(object):
     """Internal Row object. Mainly used for filtering."""
 
-    __slots__ = ['tuple', '_row', 'tags']
+    __slots__ = ['_row', 'tags']
 
     def __init__(self, row=list(), tags=list()):
         self._row = list(row)
@@ -45,7 +45,7 @@ class Row(object):
         return repr(self._row)
 
     def __getslice__(self, i, j):
-        return self._row[i,j]
+        return self._row[i:j]
 
     def __getitem__(self, i):
         return self._row[i]
@@ -57,7 +57,14 @@ class Row(object):
         del self._row[i]
 
     def __getstate__(self):
-        return {'slot': [getattr(self, slot) for slot in self.__slots__]}
+
+        slots = dict()
+
+        for slot in self.__slots__:
+            attribute = getattr(self, slot)
+            slots[slot] = attribute
+
+        return slots
 
     def __setstate__(self, state):
         for (k, v) in list(state.items()): setattr(self, k, v)
@@ -105,7 +112,7 @@ class Dataset(object):
     functionality.
 
     Usually you create a :class:`Dataset` instance in your main module, and append
-    rows and columns as you collect data. ::
+    rows as you collect data. ::
 
         data = tablib.Dataset()
         data.headers = ('name', 'age')
@@ -113,17 +120,30 @@ class Dataset(object):
         for (name, age) in some_collector():
             data.append((name, age))
 
-    You can also set rows and headers upon instantiation. This is useful if dealing
-    with dozens or hundres of :class:`Dataset` objects. ::
+
+    Setting columns is similar. The column data length must equal the
+    current height of the data and headers must be set ::
+
+        data = tablib.Dataset()
+        data.headers = ('first_name', 'last_name')
+
+        data.append(('John', 'Adams'))
+        data.append(('George', 'Washington'))
+
+        data.append_col((90, 67), header='age')
+
+
+    You can also set rows and headers upon instantiation. This is useful if
+    dealing with dozens or hundreds of :class:`Dataset` objects. ::
 
         headers = ('first_name', 'last_name')
         data = [('John', 'Adams'), ('George', 'Washington')]
 
         data = tablib.Dataset(*data, headers=headers)
 
-
     :param \*args: (optional) list of rows to populate Dataset
     :param headers: (optional) list strings for Dataset header row
+    :param title: (optional) string to use as title of the Dataset
 
 
     .. admonition:: Format Attributes Definition
@@ -133,6 +153,8 @@ class Dataset(object):
      :ref:`Adding New Formats <newformats>`.
 
     """
+
+    _formats = {}
 
     def __init__(self, *args, **kwargs):
         self._data = list(Row(arg) for arg in args)
@@ -144,15 +166,9 @@ class Dataset(object):
         # (column, callback) tuples
         self._formatters = []
 
-        try:
-            self.headers = kwargs['headers']
-        except KeyError:
-            self.headers = None
+        self.headers = kwargs.get('headers')
 
-        try:
-            self.title = kwargs['title']
-        except KeyError:
-            self.title = None
+        self.title = kwargs.get('title')
 
         self._register_formats()
 
@@ -162,7 +178,7 @@ class Dataset(object):
 
 
     def __getitem__(self, key):
-        if isinstance(key, str):
+        if isinstance(key, str) or isinstance(key, unicode):
             if key in self.headers:
                 pos = self.headers.index(key) # get 'key' index from each data
                 return [row[pos] for row in self._data]
@@ -175,14 +191,13 @@ class Dataset(object):
             else:
                 return [result.tuple for result in _results]
 
-
     def __setitem__(self, key, value):
         self._validate(value)
         self._data[key] = Row(value)
 
 
     def __delitem__(self, key):
-        if isinstance(key, str):
+        if isinstance(key, str) or isinstance(key, unicode):
 
             if key in self.headers:
 
@@ -205,6 +220,29 @@ class Dataset(object):
         except AttributeError:
             return '<dataset object>'
 
+    def __unicode__(self):
+        result = []
+
+        # Add unicode representation of headers.
+        if self.__headers:
+            result.append([unicode(h) for h in self.__headers])
+
+        # Add unicode representation of rows.
+        result.extend(list(map(unicode, row)) for row in self._data)
+
+        lens = [list(map(len, row)) for row in result]
+        field_lens = list(map(max, zip(*lens)))
+
+        # delimiter between header and data
+        if self.__headers:
+            result.insert(1, ['-' * length for length in field_lens])
+
+        format_string = '|'.join('{%s:%s}' % item for item in enumerate(field_lens))
+
+        return '\n'.join(format_string.format(*row) for row in result)
+
+    def __str__(self):
+        return self.__unicode__()
 
     # ---------
     # Internals
@@ -217,11 +255,16 @@ class Dataset(object):
             try:
                 try:
                     setattr(cls, fmt.title, property(fmt.export_set, fmt.import_set))
+                    setattr(cls, 'get_%s' % fmt.title, fmt.export_set)
+                    setattr(cls, 'set_%s' % fmt.title, fmt.import_set)
+                    cls._formats[fmt.title] = (fmt.export_set, fmt.import_set)
                 except AttributeError:
                     setattr(cls, fmt.title, property(fmt.export_set))
+                    setattr(cls, 'get_%s' % fmt.title, fmt.export_set)
+                    cls._formats[fmt.title] = (fmt.export_set, None)
 
             except AttributeError:
-                pass
+                cls._formats[fmt.title] = (None, None)
 
 
     def _validate(self, row=None, col=None, safety=False):
@@ -312,7 +355,7 @@ class Dataset(object):
         A dataset object can also be imported by setting the `Dataset.dict` attribute: ::
 
             data = tablib.Dataset()
-            data.json = '[{"last_name": "Adams","age": 90,"first_name": "John"}]'
+            data.dict = [{'age': 90, 'first_name': 'Kenneth', 'last_name': 'Reitz'}]
 
         """
         return self._package()
@@ -392,10 +435,40 @@ class Dataset(object):
                 return 0
 
 
+    def load(self, in_stream, format=None, **kwargs):
+        """
+        Import `in_stream` to the :class:`Dataset` object using the `format`.
+
+        :param \*\*kwargs: (optional) custom configuration to the format `import_set`.
+        """
+
+        if not format:
+            format = detect_format(in_stream)
+
+        export_set, import_set = self._formats.get(format, (None, None))
+        if not import_set:
+            raise UnsupportedFormat('Format {0} cannot be imported.'.format(format))
+
+        import_set(self, in_stream, **kwargs)
+        return self
+
+
+
+    def export(self, format, **kwargs):
+        """
+        Export :class:`Dataset` object to `format`.
+
+        :param \*\*kwargs: (optional) custom configuration to the format `export_set`.
+        """
+        export_set, import_set = self._formats.get(format, (None, None))
+        if not export_set:
+            raise UnsupportedFormat('Format {0} cannot be exported.'.format(format))
+
+        return export_set(self, **kwargs)
+
     # -------
     # Formats
     # -------
-
 
     @property
     def xls():
@@ -410,7 +483,7 @@ class Dataset(object):
              :class:`Dataset.xls` contains binary data, so make sure to write in binary mode::
 
                 with open('output.xls', 'wb') as f:
-                    f.write(data.xls)'
+                    f.write(data.xls)
         """
         pass
 
@@ -423,7 +496,7 @@ class Dataset(object):
              :class:`Dataset.xlsx` contains binary data, so make sure to write in binary mode::
 
                 with open('output.xlsx', 'wb') as f:
-                    f.write(data.xlsx)'
+                    f.write(data.xlsx)
         """
         pass
 
@@ -433,10 +506,10 @@ class Dataset(object):
 
          .. admonition:: Binary Warning
 
-             :class:`Dataset.xlsx` contains binary data, so make sure to write in binary mode::
+             :class:`Dataset.ods` contains binary data, so make sure to write in binary mode::
 
                 with open('output.ods', 'wb') as f:
-                    f.write(data.ods)'
+                    f.write(data.ods)
         """
         pass
 
@@ -452,6 +525,17 @@ class Dataset(object):
             data.csv = 'age, first_name, last_name\\n90, John, Adams'
 
         Import assumes (for now) that headers exist.
+
+        .. admonition:: Binary Warning
+
+             :class:`Dataset.csv` uses \\r\\n line endings by default, so make
+             sure to write in binary mode::
+
+                 with open('output.csv', 'wb') as f:
+                     f.write(data.csv)
+
+             If you do not do this, and you export the file on Windows, your
+             CSV file will open in Excel with a blank line between each row.
         """
         pass
 
@@ -477,7 +561,7 @@ class Dataset(object):
         set, a YAML list of objects will be returned. If no headers have
         been set, a YAML list of lists (rows) will be returned instead.
 
-        A dataset object can also be imported by setting the :class:`Dataset.json` attribute: ::
+        A dataset object can also be imported by setting the :class:`Dataset.yaml` attribute: ::
 
             data = tablib.Dataset()
             data.yaml = '- {age: 90, first_name: John, last_name: Adams}'
@@ -496,10 +580,11 @@ class Dataset(object):
         A dataset object can also be imported by setting the :class:`Dataset.json` attribute: ::
 
             data = tablib.Dataset()
-            data.json = '[{age: 90, first_name: "John", liast_name: "Adams"}]'
+            data.json = '[{"age": 90, "first_name": "John", "last_name": "Adams"}]'
 
         Import assumes (for now) that headers exist.
         """
+        pass
 
     @property
     def html():
@@ -507,6 +592,40 @@ class Dataset(object):
         headers have been set, they will be used as table headers.
 
         ..notice:: This method can be used for export only.
+        """
+        pass
+
+    @property
+    def dbf():
+        """A dBASE representation of the :class:`Dataset` object.
+
+        A dataset object can also be imported by setting the
+        :class:`Dataset.dbf` attribute. ::
+
+            # To import data from an existing DBF file:
+            data = tablib.Dataset()
+            data.dbf = open('existing_table.dbf').read()
+
+            # to import data from an ASCII-encoded bytestring:
+            data = tablib.Dataset()
+            data.dbf = '<bytestring of tabular data>'
+
+        .. admonition:: Binary Warning
+
+            :class:`Dataset.dbf` contains binary data, so make sure to write in binary mode::
+
+                with open('output.dbf', 'wb') as f:
+                    f.write(data.dbf)
+        """
+        pass
+
+
+    @property
+    def latex():
+        """A LaTeX booktabs representation of the :class:`Dataset` object. If a
+        title has been set, it will be exported as the table caption.
+
+        .. note:: This method can be used for export only.
         """
         pass
 
@@ -518,30 +637,11 @@ class Dataset(object):
     def insert(self, index, row, tags=list()):
         """Inserts a row to the :class:`Dataset` at the given index.
 
-        Rows and columns inserted must be the correct size (height or width).
+        Rows inserted must be the correct size (height or width).
 
         The default behaviour is to insert the given row to the :class:`Dataset`
-        object at the given index. If the ``col`` parameter is given, however,
-        a new column will be insert to the :class:`Dataset` object instead.
-
-        You can also insert a column of a single callable object, which will
-        add a new column with the return values of the callable each as an
-        item in the column. ::
-
-            data.append(col=random.randint)
-
-        See :ref:`dyncols` for an in-depth example.
-
-        .. versionchanged:: 0.9.0
-           If inserting a column, and :class:`Dataset.headers` is set, the
-           header attribute must be set, and will be considered the header for
-           that row.
-
-        .. versionadded:: 0.9.0
-           If inserting a row, you can add :ref:`tags <tags>` to the row you are inserting.
-           This gives you the ability to :class:`filter <Dataset.filter>` your
-           :class:`Dataset` later.
-        """
+        object at the given index.
+       """
 
         self._validate(row)
         self._data.insert(index, Row(row, tags=tags))
@@ -569,6 +669,14 @@ class Dataset(object):
         """
 
         self.rpush(row, tags)
+
+    def extend(self, rows, tags=list()):
+        """Adds a list of rows to the :class:`Dataset` using
+        :class:`Dataset.append`
+        """
+
+        for row in rows:
+            self.append(row, tags)
 
 
     def lpop(self):
@@ -615,7 +723,21 @@ class Dataset(object):
         that row.
 
         See :ref:`dyncols` for an in-depth example.
+
+        .. versionchanged:: 0.9.0
+           If inserting a column, and :class:`Dataset.headers` is set, the
+           header attribute must be set, and will be considered the header for
+           that row.
+
+        .. versionadded:: 0.9.0
+           If inserting a row, you can add :ref:`tags <tags>` to the row you are inserting.
+           This gives you the ability to :class:`filter <Dataset.filter>` your
+           :class:`Dataset` later.
+
         """
+
+        if col is None:
+            col = []
 
         # Callable Columns...
         if hasattr(col, '__call__'):
@@ -628,7 +750,13 @@ class Dataset(object):
             # pop the first item off, add to headers
             if not header:
                 raise HeadersNeeded()
+
+            # corner case - if header is set without data
+            elif header and self.height == 0 and len(col):
+                raise InvalidDimensions
+
             self.headers.insert(index, header)
+
 
         if self.height and self.width:
 
@@ -684,6 +812,12 @@ class Dataset(object):
         self.rpush_col(col, header)
 
 
+    def get_col(self, index):
+        """Returns the column from the :class:`Dataset` at the given index."""
+
+        return [row[index] for row in self._data]
+
+
     # ----
     # Misc
     # ----
@@ -730,13 +864,13 @@ class Dataset(object):
         sorted.
         """
 
-        if isinstance(col, str):
+        if isinstance(col, str) or isinstance(col, unicode):
 
             if not self.headers:
                 raise HeadersNeeded
 
             _sorted = sorted(self.dict, key=itemgetter(col), reverse=reverse)
-            _dset = Dataset(headers=self.headers)
+            _dset = Dataset(headers=self.headers, title=self.title)
 
             for item in _sorted:
                 row = [item[key] for key in self.headers]
@@ -747,7 +881,7 @@ class Dataset(object):
                 col = self.headers[col]
 
             _sorted = sorted(self.dict, key=itemgetter(col), reverse=reverse)
-            _dset = Dataset(headers=self.headers)
+            _dset = Dataset(headers=self.headers, title=self.title)
 
             for item in _sorted:
                 if self.headers:
@@ -775,17 +909,17 @@ class Dataset(object):
         new_headers = [self.headers[0]] + self[self.headers[0]]
 
         _dset.headers = new_headers
-        for column in self.headers:
+        for index, column in enumerate(self.headers):
 
             if column == self.headers[0]:
                 # It's in the headers, so skip it
                 continue
 
             # Adding the column name as now they're a regular column
-            row_data = [column] + self[column]
+            # Use `get_col(index)` in case there are repeated values
+            row_data = [column] + self.get_col(index)
             row_data = Row(row_data)
             _dset.append(row=row_data)
-
         return _dset
 
 
@@ -846,16 +980,65 @@ class Dataset(object):
         return _dset
 
 
+    def remove_duplicates(self):
+        """Removes all duplicate rows from the :class:`Dataset` object
+        while maintaining the original order."""
+        seen = set()
+        self._data[:] = [row for row in self._data if not (tuple(row) in seen or seen.add(tuple(row)))]
+
+
     def wipe(self):
         """Removes all content and headers from the :class:`Dataset` object."""
         self._data = list()
         self.__headers = None
 
 
+    def subset(self, rows=None, cols=None):
+        """Returns a new instance of the :class:`Dataset`,
+        including only specified rows and columns.
+        """
+
+        # Don't return if no data
+        if not self:
+            return
+
+        if rows is None:
+            rows = list(range(self.height))
+
+        if cols is None:
+            cols = list(self.headers)
+
+        #filter out impossible rows and columns
+        rows = [row for row in rows if row in range(self.height)]
+        cols = [header for header in cols if header in self.headers]
+
+        _dset = Dataset()
+
+        #filtering rows and columns
+        _dset.headers = list(cols)
+
+        _dset._data = []
+        for row_no, row in enumerate(self._data):
+            data_row = []
+            for key in _dset.headers:
+                if key in self.headers:
+                    pos = self.headers.index(key)
+                    data_row.append(row[pos])
+                else:
+                    raise KeyError
+
+            if row_no in rows:
+                _dset.append(row=Row(data_row))
+
+        return _dset
+
+
 
 class Databook(object):
     """A book of :class:`Dataset` objects.
     """
+
+    _formats = {}
 
     def __init__(self, sets=None):
 
@@ -872,7 +1055,6 @@ class Databook(object):
         except AttributeError:
             return '<databook object>'
 
-
     def wipe(self):
         """Removes all :class:`Dataset` objects from the :class:`Databook`."""
         self._datasets = []
@@ -885,16 +1067,20 @@ class Databook(object):
             try:
                 try:
                     setattr(cls, fmt.title, property(fmt.export_book, fmt.import_book))
+                    cls._formats[fmt.title] = (fmt.export_book, fmt.import_book)
                 except AttributeError:
                     setattr(cls, fmt.title, property(fmt.export_book))
+                    cls._formats[fmt.title] = (fmt.export_book, None)
 
             except AttributeError:
-                pass
+                cls._formats[fmt.title] = (None, None)
 
+    def sheets(self):
+        return self._datasets
 
     def add_sheet(self, dataset):
         """Adds given :class:`Dataset` to the :class:`Databook`."""
-        if type(dataset) is Dataset:
+        if isinstance(dataset, Dataset):
             self._datasets.append(dataset)
         else:
             raise InvalidDatasetType
@@ -922,29 +1108,55 @@ class Databook(object):
         """The number of the :class:`Dataset` objects within :class:`Databook`."""
         return len(self._datasets)
 
+    def load(self, format, in_stream, **kwargs):
+        """
+        Import `in_stream` to the :class:`Databook` object using the `format`.
 
-def detect(stream):
-    """Return (format, stream) of given stream."""
+        :param \*\*kwargs: (optional) custom configuration to the format `import_book`.
+        """
+
+        if not format:
+            format = detect_format(in_stream)
+
+        export_book, import_book = self._formats.get(format, (None, None))
+        if not import_book:
+            raise UnsupportedFormat('Format {0} cannot be loaded.'.format(format))
+
+        import_book(self, in_stream, **kwargs)
+        return self
+
+    def export(self, format, **kwargs):
+        """
+        Export :class:`Databook` object to `format`.
+
+        :param \*\*kwargs: (optional) custom configuration to the format `export_book`.
+        """
+        export_book, import_book = self._formats.get(format, (None, None))
+        if not export_book:
+            raise UnsupportedFormat('Format {0} cannot be exported.'.format(format))
+
+        return export_book(self, **kwargs)
+
+
+def detect_format(stream):
+    """Return format name of given stream."""
     for fmt in formats.available:
         try:
             if fmt.detect(stream):
-                return (fmt, stream)
+                return fmt.title
         except AttributeError:
             pass
-    return (None, stream)
 
-
-def import_set(stream):
+def import_set(stream, format=None, **kwargs):
     """Return dataset of given stream."""
-    (format, stream) = detect(stream)
 
-    try:
-        data = Dataset()
-        format.import_set(data, stream)
-        return data
+    return Dataset().load(stream, format, **kwargs)
 
-    except AttributeError:
-        return None
+
+def import_book(stream, format=None, **kwargs):
+    """Return dataset of given stream."""
+
+    return Databook().load(stream, format, **kwargs)
 
 
 class InvalidDatasetType(Exception):

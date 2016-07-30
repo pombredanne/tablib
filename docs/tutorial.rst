@@ -39,6 +39,7 @@ You can now start filling this :class:`Dataset <tablib.Dataset>` object with dat
 
 
 
+
 -----------
 Adding Rows
 -----------
@@ -68,7 +69,7 @@ Adding Headers
 --------------
 
 
-It's time enhance our :class:`Dataset` by giving our columns some titles. To do so, set :class:`Dataset.headers`. ::
+It's time to enhance our :class:`Dataset` by giving our columns some titles. To do so, set :class:`Dataset.headers`. ::
 
     data.headers = ['First Name', 'Last Name']
 
@@ -96,6 +97,15 @@ Let's view the data now. ::
 
 It's that easy.
 
+
+--------------
+Importing Data
+--------------
+Creating a :class:`tablib.Dataset` object by importing a pre-existing file is simple. ::
+
+   imported_data = Dataset().load(open('data.csv').read())
+
+This detects what sort of data is being passed in, and uses an appropriate formatter to do the import. So you can import from a variety of different file types.
 
 --------------
 Exporting Data
@@ -144,6 +154,13 @@ If we had a set of data consisting of thousands of rows, it could be useful to g
 To do so, we access the :class:`Dataset` as if it were a standard Python dictionary.  ::
 
     >>> data['First Name']
+    ['Kenneth', 'Bessie']
+
+You can also access the column using its index. ::
+
+    >>> data.headers
+    ['Last Name', 'First Name', 'Age']
+    >>> data.get_col(1)
     ['Kenneth', 'Bessie']
 
 Let's find the average age. ::
@@ -244,7 +261,7 @@ Filtering Datasets with Tags
 
 
 When constructing a :class:`Dataset` object, you can add tags to rows by specifying the ``tags`` parameter.
-This allows you to filter your :class:`Dataset` later. This can be useful so separate rows of data based on
+This allows you to filter your :class:`Dataset` later. This can be useful to separate rows of data based on
 arbitrary criteria (*e.g.* origin) that you don't want to include in your :class:`Dataset`.
 
 Let's tag some students. ::
@@ -256,7 +273,7 @@ Let's tag some students. ::
     students.rpush(['Kenneth', 'Reitz'], tags=['male', 'technical'])
     students.rpush(['Bessie', 'Monke'], tags=['female', 'creative'])
 
-Now that we have extra meta-data on our rows, we can use easily filter our :class:`Dataset`. Let's just see Male students. ::
+Now that we have extra meta-data on our rows, we can easily filter our :class:`Dataset`. Let's just see Male students. ::
 
 
     >>> students.filter(['male']).yaml

@@ -1,6 +1,66 @@
 History
 -------
 
+0.11.4 (???)
+++++++++++++
+
+- Fixed textual representation for Dataset with no headers
+
+0.11.3 (2016-02-16)
++++++++++++++++++++
+
+- Release fix.
+
+0.11.2 (2016-02-16)
++++++++++++++++++++
+
+**Bugfixes**
+
+- Fix export only formats.
+- Fix for xlsx output.
+
+0.11.1 (2016-02-07)
++++++++++++++++++++
+
+**Bugfixes**
+
+- Fixed packaging error on Python 3.
+
+
+0.11.0 (2016-02-07)
++++++++++++++++++++
+
+**New Formats!**
+
+- Added LaTeX table export format (``Dataset.latex``).
+- Support for dBase (DBF) files (``Dataset.dbf``).
+
+**Improvements**
+
+- New import/export interface (``Dataset.export()``, ``Dataset.load()``).
+- CSV custom delimiter support (``Dataset.export('csv', delimiter='$')``).
+- Adding ability to remove duplicates to all rows in a dataset (``Dataset.remove_duplicates()``).
+- Added a mechanism to avoid ``datetime.datetime`` issues when serializing data.
+- New ``detect_format()`` function (mostly for internal use).
+- Update the vendored unicodecsv to fix ``None`` handling.
+- Only freeze the headers row, not the headers columns (xls).
+
+**Breaking Changes**
+
+- ``detect()`` function removed.
+
+**Bugfixes**
+
+- Fix XLSX import.
+- Bugfix for ``Dataset.transpose().transpose()``.
+
+
+0.10.0 (2014-05-27)
++++++++++++++++++++
+
+* Unicode Column Headers
+* ALL the bugfixes!
+
 0.9.11 (2011-06-30)
 +++++++++++++++++++
 
@@ -16,7 +76,7 @@ History
 
 * Dataset API Changes
 * ``stack_rows`` => ``stack``, ``stack_columns`` => ``stack_cols``
-* column operations have their own methods now (``apend_col``, ``insert_col``)
+* column operations have their own methods now (``append_col``, ``insert_col``)
 * List-style ``pop()``
 * Redis-style ``rpush``, ``lpush``, ``rpop``, ``lpop``, ``rpush_col``, and ``lpush_col``
 

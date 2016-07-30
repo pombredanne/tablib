@@ -10,7 +10,7 @@ Advanced features include, segregation, dynamic columns, tags / filtering, and
 seamless format import/export.
 
 
-Philosphy
+Philosophy
 ---------
 
 Tablib was developed with a few :pep:`20` idioms in mind.
@@ -49,7 +49,7 @@ Tablib is released under terms of `The MIT License`_.
 Tablib License
 --------------
 
-Copyright 2011 Kenneth Reitz
+Copyright 2016 Kenneth Reitz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
